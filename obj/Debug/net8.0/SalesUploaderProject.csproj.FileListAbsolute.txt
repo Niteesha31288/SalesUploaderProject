@@ -1,0 +1,8 @@
+/Users/neetu/Desktop/SalesUploaderProject/obj/Debug/net8.0/SalesUploaderProject.csproj.AssemblyReference.cache
+/Users/neetu/Desktop/SalesUploaderProject/obj/Debug/net8.0/SalesUploaderProject.GeneratedMSBuildEditorConfig.editorconfig
+/Users/neetu/Desktop/SalesUploaderProject/obj/Debug/net8.0/SalesUploaderProject.AssemblyInfoInputs.cache
+/Users/neetu/Desktop/SalesUploaderProject/obj/Debug/net8.0/SalesUploaderProject.AssemblyInfo.cs
+/Users/neetu/Desktop/SalesUploaderProject/obj/Debug/net8.0/SalesUploaderProject.csproj.CoreCompileInputs.cache
+/Users/neetu/Desktop/SalesUploaderProject/obj/Debug/net8.0/SalesUploaderProject.MvcApplicationPartsAssemblyInfo.cache
+/Users/neetu/Desktop/SalesUploaderProject/obj/Debug/net8.0/SalesUploaderProject.RazorAssemblyInfo.cache
+/Users/neetu/Desktop/SalesUploaderProject/obj/Debug/net8.0/SalesUploaderProject.RazorAssemblyInfo.cs

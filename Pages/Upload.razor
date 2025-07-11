@@ -1,0 +1,104 @@
+@page "/upload"
+
+<MudPaper Class="pa-4 mx-auto" Style="max-width:800px">
+    <MudText Typo="Typo.h5" Class="mb-2">Upload Sales Excel File</MudText>
+
+    <InputFile OnChange="HandleFileSelected" accept=".xlsx" />
+
+    @if (!string.IsNullOrEmpty(statusMessage))
+    {
+        <MudAlert Severity="Severity.Info" Class="mt-3">@statusMessage</MudAlert>
+    }
+
+    @if (newRows?.Count > 0)
+    {
+        <MudTable Items="newRows" Class="mt-3">
+            <HeaderContent>
+                <MudTh>Quote Sent</MudTh>
+                <MudTh>SalesPerson</MudTh>
+                <MudTh>Project Name</MudTh>
+                <MudTh>Customer</MudTh>
+                <MudTh>Total Net</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd>@context.QuoteSentDate.ToShortDateString()</MudTd>
+                <MudTd>@context.SalesPerson</MudTd>
+                <MudTd>@context.ProjectName</MudTd>
+                <MudTd>@context.Customer</MudTd>
+                <MudTd>@context.TotalNet</MudTd>
+            </RowTemplate>
+        </MudTable>
+
+        <MudButton OnClick="SaveToDatabase" Color="Color.Primary" Variant="Variant.Filled" Class="mt-3">
+            Save to Database
+        </MudButton>
+    }
+</MudPaper>
+
+@code {
+    private List<SalesLead> newRows = new();
+    private string statusMessage = string.Empty;
+
+    [Inject] private AppDbContext Db { get; set; } = default!;
+
+    private async Task HandleFileSelected(InputFileChangeEventArgs e)
+    {
+        try
+        {
+            var file = e.File;
+            using var stream = file.OpenReadStream(maxAllowedSize: 10_000_000);
+            using var workbook = new XLWorkbook(stream);
+            var worksheet = workbook.Worksheets.First();
+            var existingKeys = Db.SalesLeads
+                .Select(x => x.QuoteSentDate.Date + "|" + x.SalesPerson + "|" + x.ProjectName)
+                .ToHashSet();
+
+            newRows = worksheet.RowsUsed().Skip(1)
+                .Where(r => !r.Cell(1).IsEmpty())
+                .Select(r =>
+                {
+                    var lead = new SalesLead
+                    {
+                        QuoteSentDate = r.Cell(1).GetDateTime(),
+                        SalesPerson = r.Cell(2).GetString().Trim(),
+                        ProjectName = r.Cell(3).GetString().Trim(),
+                        ProjectCode = r.Cell(4).GetString().Trim(),
+                        Customer = r.Cell(5).GetString().Trim(),
+                        CustomerCity = r.Cell(6).GetString().Trim(),
+                        CustomerState = r.Cell(7).GetString().Trim(),
+                        MarketingCategory = r.Cell(8).GetString().Trim(),
+                        NumberOfQuotes = int.TryParse(r.Cell(9).GetString(), out var nq) ? nq : 0,
+                        TotalNet = decimal.TryParse(r.Cell(10).GetString(), out var net) ? net : 0
+                    };
+                    var key = lead.QuoteSentDate.Date + "|" + lead.SalesPerson + "|" + lead.ProjectName;
+                    return (lead, key);
+                })
+                .Where(x => !existingKeys.Contains(x.key))
+                .Select(x => x.lead)
+                .ToList();
+
+            statusMessage = newRows.Any()
+                ? $"✅ {newRows.Count} new rows ready to save."
+                : "ℹ️ All rows already exist in the database.";
+        }
+        catch (Exception ex)
+        {
+            statusMessage = $"❌ Error reading Excel file: {ex.Message}";
+        }
+    }
+
+    private async Task SaveToDatabase()
+    {
+        try
+        {
+            Db.SalesLeads.AddRange(newRows);
+            await Db.SaveChangesAsync();
+            statusMessage = $"💾 {newRows.Count} rows saved to the database.";
+            newRows.Clear();
+        }
+        catch (Exception ex)
+        {
+            statusMessage = $"❌ Failed to save: {ex.Message}";
+        }
+    }
+}
